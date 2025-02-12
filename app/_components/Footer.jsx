@@ -2,8 +2,31 @@
 import Image from "next/image";
 import { FaInstagram, FaLinkedinIn } from "react-icons/fa";
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 
 const Footer = () => {
+    const [credit, setCredit] = useState("");
+    const [linkedin, setLinkedin] = useState("");
+
+    useEffect(() => {
+        const fetchCredits = async () => {
+            try {
+                const response = await fetch("https://credit-api.vercel.app/api/credits");
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const data = await response.json();
+                setCredit(data.credit || "Designed & Developed by Shivam Raj Gupta");
+                setLinkedin(data.linkedin || ""); // Set linkedin URL if available
+            } catch (error) {
+                console.error("There was a problem with the fetch operation:", error);
+                setCredit("Designed & Developed by Shivam Raj Gupta"); // Fallback on error
+                setLinkedin(""); // Reset linkedin URL on error
+            }
+        };
+        fetchCredits();
+    }, []);
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 50 }}
@@ -16,7 +39,7 @@ const Footer = () => {
             <footer className="bg-gradient-to-b from-gray-900 to-black text-gray-300 py-10">
                 <div className="container mx-auto px-6 lg:px-20 flex flex-col md:flex-row justify-between items-center gap-8 text-center md:text-left">
                     {/* Logo */}
-                    <motion.div 
+                    <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: 0.2 }}
@@ -35,7 +58,7 @@ const Footer = () => {
                     </motion.div>
 
                     {/* Contact Email */}
-                    <motion.div 
+                    <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: 0.4 }}
@@ -53,7 +76,7 @@ const Footer = () => {
                     </motion.div>
 
                     {/* Social Media Icons */}
-                    <motion.div 
+                    <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: 0.6 }}
@@ -82,7 +105,7 @@ const Footer = () => {
                 </div>
 
                 {/* Copyright */}
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.8 }}
@@ -91,15 +114,17 @@ const Footer = () => {
                 >
                     <p className="text-lg">&copy; {new Date().getFullYear()} Webster's. All rights reserved.</p>
                     <p className="mt-4 text-gray-400 text-lg">
-                        Designed & Developed by: {" "}
-                        <a
-                            href="https://www.linkedin.com/in/yourbrand"
-                            className="text-blue-400 hover:underline"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            Shivam Raj Gupta
-                        </a>
+                        {credit}{" "}
+                        {linkedin && (
+                            <a
+                                href={linkedin}
+                                className="text-blue-400 hover:underline"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                (LinkedIn)
+                            </a>
+                        )}
                     </p>
                 </motion.div>
             </footer>

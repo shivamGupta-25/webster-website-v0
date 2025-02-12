@@ -20,7 +20,7 @@ const Footer = () => {
                 setLinkedin(data.linkedin || ""); // Set linkedin URL if available
             } catch (error) {
                 console.error("There was a problem with the fetch operation:", error);
-                setCredit("Designed & Developed by Shivam Raj Gupta"); // Fallback on error
+                setCredit("Designed & Developed by Shiva"); // Fallback on error
                 setLinkedin(""); // Reset linkedin URL on error
             }
         };

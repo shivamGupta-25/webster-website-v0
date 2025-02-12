@@ -1,30 +1,51 @@
 "use client";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { FaInstagram, FaLinkedinIn } from "react-icons/fa";
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
 
 const Footer = () => {
-    const [credit, setCredit] = useState("");
-    const [linkedin, setLinkedin] = useState("");
+    const [developerInfo, setDeveloperInfo] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
-        const fetchCredits = async () => {
+        let isMounted = true;
+
+        const fetchDeveloperInfo = async () => {
             try {
-                const response = await fetch("https://credit-api.vercel.app/api/credits");
+                const response = await fetch("https://credit-api.vercel.app/api/credits", {
+                // const response = await fetch("http://localhost:3001/api/credits", {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                });
+
                 if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                    throw new Error("Failed to fetch developer info");
                 }
+
                 const data = await response.json();
-                setCredit(data.credit || "Designed & Developed by Shivam Raj Gupta");
-                setLinkedin(data.linkedin || ""); // Set linkedin URL if available
+                if (isMounted) {
+                    setDeveloperInfo(data);
+                }
             } catch (error) {
-                console.error("There was a problem with the fetch operation:", error);
-                setCredit("Designed & Developed by Shiva"); // Fallback on error
-                setLinkedin(""); // Reset linkedin URL on error
+                if (isMounted) {
+                    setError(error.message);
+                }
+            } finally {
+                if (isMounted) {
+                    setLoading(false);
+                }
             }
         };
-        fetchCredits();
+
+        fetchDeveloperInfo();
+
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     return (
@@ -104,7 +125,7 @@ const Footer = () => {
                     </motion.div>
                 </div>
 
-                {/* Copyright */}
+                {/* Copyright & Developer Credit */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
@@ -113,19 +134,25 @@ const Footer = () => {
                     className="text-center text-sm mt-8 border-t border-gray-700 pt-4 text-gray-500"
                 >
                     <p className="text-lg">&copy; {new Date().getFullYear()} Webster's. All rights reserved.</p>
-                    <p className="mt-4 text-gray-400 text-lg">
-                        {credit}{" "}
-                        {linkedin && (
-                            <a
-                                href={linkedin}
-                                className="text-blue-400 hover:underline"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                            >
-                                (LinkedIn)
-                            </a>
-                        )}
-                    </p>
+                    {loading ? (
+                        <p className="mt-4 text-gray-400 text-lg">Loading developer info...</p>
+                    ) : error ? (
+                        <p className="mt-4 text-red-400 text-lg">{error}</p>
+                    ) : (
+                        developerInfo && (
+                            <p className="mt-4 text-gray-400 text-lg">
+                                Designed & Developed by:{" "}
+                                <a
+                                    href={developerInfo.linkedin}
+                                    className="text-blue-400 hover:underline"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    {developerInfo.credit}
+                                </a>
+                            </p>
+                        )
+                    )}
                 </motion.div>
             </footer>
         </motion.div>

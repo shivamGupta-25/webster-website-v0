@@ -1,23 +1,9 @@
 "use client";
-
-import { useEffect, useState } from "react";
 import Image from "next/image";
 import { FaInstagram, FaLinkedinIn } from "react-icons/fa";
 import { motion } from "framer-motion";
 
 const Footer = () => {
-    const [credits, setCredits] = useState("");
-
-    useEffect(() => {
-        fetch("/api/credits")
-            .then(res => res.json())
-            .then(data => setCredits(data))
-            .catch(() => setCredits({
-                text: "Designed & Developed by Shivam Raj Gupta",
-                link: "https://www.linkedin.com/in/yourbrand"
-            }));
-    }, []);
-
     return (
         <motion.div
             initial={{ opacity: 0, y: 50 }}
@@ -105,15 +91,15 @@ const Footer = () => {
                 >
                     <p className="text-lg">&copy; {new Date().getFullYear()} Webster's. All rights reserved.</p>
                     <p className="mt-4 text-gray-400 text-lg">
-                        {credits.text}{" "}
-                        {/* <a
+                        Designed & Developed by: {" "}
+                        <a
                             href="https://www.linkedin.com/in/yourbrand"
                             className="text-blue-400 hover:underline"
                             target="_blank"
                             rel="noopener noreferrer"
                         >
                             Shivam Raj Gupta
-                        </a> */}
+                        </a>
                     </p>
                 </motion.div>
             </footer>

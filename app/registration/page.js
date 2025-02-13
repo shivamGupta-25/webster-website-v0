@@ -1,7 +1,7 @@
-{/* <>
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -26,6 +26,7 @@ const formSchema = z.object({
 
 const Registration = () => {
     const [college, setCollege] = useState("");
+    const router = useRouter();
     const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm({
         resolver: zodResolver(formSchema),
     });
@@ -33,10 +34,11 @@ const Registration = () => {
     const onSubmit = (data) => {
         console.log("Form Submitted", data);
         toast.success("Registration Successful!");
-        reset();
-        setCollege("");
+		setTimeout(() => {
+			router.push("/formsubmitted");
+		  }, 100) // Match animation duration
     };
-
+	
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
             <div className="w-full max-w-lg p-8 bg-white shadow-lg rounded-xl space-y-6">
@@ -108,29 +110,6 @@ const Registration = () => {
             </div>
         </div>
     );
-};
-
-export default Registration;
-
-</> */}
-
-const Registration = () => {
-
-	return (
-		<>
-			<iframe
-				src="https://docs.google.com/forms/d/e/1FAIpQLSfKTlfbDnhaYzUJOAetsGA3goKXje9iC_Vb-6lUbOGNL43PoA/viewform?embedded=true"
-				style={{
-					position: "absolute",
-					top: 0,
-					left: 0,
-					width: "100%",
-					height: "100%",
-					border: "none"
-				}}>Loading…
-			</iframe>
-		</>
-	);
 };
 
 export default Registration;

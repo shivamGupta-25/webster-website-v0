@@ -4,36 +4,58 @@ import { JWT } from 'google-auth-library';
 import { NextResponse } from 'next/server';
 
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
-const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-const GOOGLE_CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL;
-const GOOGLE_SHEET_ID = process.env.GOOGLE_SHEET_ID;
+
+// Properly format the private key by replacing escaped newlines
+function getFormattedKey() {
+    const key = process.env.GOOGLE_PRIVATE_KEY;
+    if (!key) {
+        throw new Error('GOOGLE_PRIVATE_KEY is not defined in environment variables');
+    }
+    // Handle both formats: already formatted or escaped newlines
+    return key.includes('\\n') ? key.replace(/\\n/g, '\n') : key;
+}
+
+// Verify all required environment variables are present
+function validateEnvironmentVars() {
+    const required = {
+        GOOGLE_PRIVATE_KEY: process.env.GOOGLE_PRIVATE_KEY,
+        GOOGLE_CLIENT_EMAIL: process.env.GOOGLE_CLIENT_EMAIL,
+        GOOGLE_SHEET_ID: process.env.GOOGLE_SHEET_ID
+    };
+
+    const missing = Object.entries(required)
+        .filter(([_, value]) => !value)
+        .map(([key]) => key);
+
+    if (missing.length > 0) {
+        throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+    }
+}
 
 async function getAuthToken() {
     try {
-        if (!GOOGLE_CLIENT_EMAIL) {
-            throw new Error('GOOGLE_CLIENT_EMAIL is not defined');
-        }
-        if (!GOOGLE_PRIVATE_KEY) {
-            throw new Error('GOOGLE_PRIVATE_KEY is not defined');
-        }
+        validateEnvironmentVars();
         
         const client = new JWT({
-            email: GOOGLE_CLIENT_EMAIL,
-            key: GOOGLE_PRIVATE_KEY,
+            email: process.env.GOOGLE_CLIENT_EMAIL,
+            key: getFormattedKey(),
             scopes: SCOPES,
         });
-        
+
+        // Test the authentication explicitly
         const auth = await client.authorize();
-        console.log('Authentication successful');
+        if (!auth.access_token) {
+            throw new Error('Failed to obtain access token');
+        }
+
         return client;
     } catch (error) {
-        console.error('Auth error details:', {
+        console.error('Authentication Error:', {
             message: error.message,
             stack: error.stack,
-            email: GOOGLE_CLIENT_EMAIL ? 'Present' : 'Missing',
-            key: GOOGLE_PRIVATE_KEY ? 'Present' : 'Missing'
+            timestamp: new Date().toISOString()
         });
-        throw new Error(`Failed to authenticate with Google: ${error.message}`);
+        throw new Error(`Authentication failed: ${error.message}`);
     }
 }
 
@@ -43,28 +65,36 @@ async function getExistingRegistrations(data) {
         const sheets = google.sheets({ version: 'v4', auth: client });
         
         const response = await sheets.spreadsheets.values.get({
-            spreadsheetId: GOOGLE_SHEET_ID,
+            spreadsheetId: process.env.GOOGLE_SHEET_ID,
             range: 'Sheet1!A:K',
+        }).catch(error => {
+            console.error('Sheets API Error:', {
+                error: error.message,
+                code: error.code,
+                status: error.status
+            });
+            throw new Error('Failed to access Google Sheet');
         });
+
+        if (!response || !response.data) {
+            throw new Error('No response from Google Sheets API');
+        }
 
         const rows = response.data.values || [];
         
         // Check for various duplicate conditions
-        const isDuplicate = rows.some(row => {
-            const emailMatch = row[1] === data.email;
+        const duplicateCheck = rows.find(row => {
+            const emailMatch = row[1]?.toLowerCase() === data.email?.toLowerCase();
             const phoneMatch = row[6] === data.phone;
             const eventCategoryMatch = row[7] === data.eventCategory;
             const eventMatch = row[8] === data.event;
             
-            // If email or phone matches and event category and event match
-            if ((emailMatch || phoneMatch) && eventCategoryMatch && eventMatch) {
-                return true;
-            }
-            return false;
+            return (emailMatch || phoneMatch) && eventCategoryMatch && eventMatch;
         });
 
-        if (isDuplicate) {
-            if (rows.some(row => row[1] === data.email)) {
+        if (duplicateCheck) {
+            const emailMatch = rows.some(row => row[1]?.toLowerCase() === data.email?.toLowerCase());
+            if (emailMatch) {
                 return { isDuplicate: true, message: 'You have already registered for this event with this email' };
             }
             if (rows.some(row => row[6] === data.phone)) {
@@ -75,16 +105,18 @@ async function getExistingRegistrations(data) {
 
         return { isDuplicate: false };
     } catch (error) {
-        console.error('Error checking registrations:', error);
-        throw new Error('Failed to check existing registrations');
+        console.error('Registration Check Error:', {
+            message: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString()
+        });
+        throw error;
     }
 }
 
 export async function POST(req) {
     try {
-        if (!GOOGLE_PRIVATE_KEY || !GOOGLE_CLIENT_EMAIL || !GOOGLE_SHEET_ID) {
-            throw new Error('Missing required Google Sheets credentials');
-        }
+        validateEnvironmentVars();
 
         const data = await req.json();
         
@@ -103,7 +135,7 @@ export async function POST(req) {
         // Format data for sheet
         const rowData = [
             new Date().toISOString(),
-            data.email,
+            data.email?.toLowerCase(),
             data.name,
             data.rollNo,
             data.course,
@@ -116,18 +148,31 @@ export async function POST(req) {
         ];
 
         await sheets.spreadsheets.values.append({
-            spreadsheetId: GOOGLE_SHEET_ID,
+            spreadsheetId: process.env.GOOGLE_SHEET_ID,
             range: 'Sheet1!A:K',
             valueInputOption: 'RAW',
             insertDataOption: 'INSERT_ROWS',
             resource: {
                 values: [rowData],
             },
+        }).catch(error => {
+            console.error('Sheet Append Error:', {
+                error: error.message,
+                code: error.code,
+                status: error.status
+            });
+            throw new Error('Failed to save registration data');
         });
 
         return NextResponse.json({ success: true }, { status: 200 });
     } catch (error) {
-        console.error('Registration error:', error);
+        console.error('Registration Error:', {
+            message: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString(),
+            data: error.response?.data
+        });
+        
         return NextResponse.json(
             { error: error.message || 'Failed to process registration' },
             { status: 500 }

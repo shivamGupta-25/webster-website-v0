@@ -26,7 +26,8 @@ const invalidEmailPrefixes = [
 	'noreply',
 	'nobody',
 	'fake',
-	'xyz'
+	'xyz',
+	'example1'
   ];
 // Email validation regex for academic emails
 const orgEmailRegex = /^[a-zA-Z0-9][a-zA-Z0-9._%+-]*@([a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|du\.ac\.in|ipu\.ac\.in|ignou\.ac\.in|jnu\.ac\.in|iitd\.ac\.in|nsut\.ac\.in|dtu\.ac\.in|igdtuw\.ac\.in|aud\.ac\.in|jamiahamdard\.edu|bhu\.ac\.in|bvpindia\.com|mait\.ac\.in|ip\.edu|msit\.in|gbpuat\.ac\.in)$/;

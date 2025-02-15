@@ -8,23 +8,32 @@ const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n')
 const GOOGLE_CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL;
 const GOOGLE_SHEET_ID = process.env.GOOGLE_SHEET_ID;
 
-// const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
-// const GOOGLE_PRIVATE_KEY = process.env.NEXT_PUBLIC_GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-// const GOOGLE_CLIENT_EMAIL = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_EMAIL;
-// const GOOGLE_SHEET_ID = process.env.NEXT_PUBLIC_GOOGLE_SHEET_ID;
-
 async function getAuthToken() {
     try {
+        if (!GOOGLE_CLIENT_EMAIL) {
+            throw new Error('GOOGLE_CLIENT_EMAIL is not defined');
+        }
+        if (!GOOGLE_PRIVATE_KEY) {
+            throw new Error('GOOGLE_PRIVATE_KEY is not defined');
+        }
+        
         const client = new JWT({
             email: GOOGLE_CLIENT_EMAIL,
             key: GOOGLE_PRIVATE_KEY,
             scopes: SCOPES,
         });
-        await client.authorize();
+        
+        const auth = await client.authorize();
+        console.log('Authentication successful');
         return client;
     } catch (error) {
-        console.error('Auth error:', error);
-        throw new Error('Failed to authenticate with Google');
+        console.error('Auth error details:', {
+            message: error.message,
+            stack: error.stack,
+            email: GOOGLE_CLIENT_EMAIL ? 'Present' : 'Missing',
+            key: GOOGLE_PRIVATE_KEY ? 'Present' : 'Missing'
+        });
+        throw new Error(`Failed to authenticate with Google: ${error.message}`);
     }
 }
 
